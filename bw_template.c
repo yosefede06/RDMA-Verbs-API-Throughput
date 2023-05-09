@@ -82,12 +82,12 @@ struct pingpong_dest {
 enum ibv_mtu pp_mtu_to_enum(int mtu)
 {
     switch (mtu) {
-    case 256:  return IBV_MTU_256;
-    case 512:  return IBV_MTU_512;
-    case 1024: return IBV_MTU_1024;
-    case 2048: return IBV_MTU_2048;
-    case 4096: return IBV_MTU_4096;
-    default:   return -1;
+        case 256:  return IBV_MTU_256;
+        case 512:  return IBV_MTU_512;
+        case 1024: return IBV_MTU_1024;
+        case 2048: return IBV_MTU_2048;
+        case 4096: return IBV_MTU_4096;
+        default:   return -1;
     }
 }
 
@@ -155,13 +155,13 @@ static int pp_connect_ctx(struct pingpong_context *ctx, int port, int my_psn,
         attr.ah_attr.grh.sgid_index = sgid_idx;
     }
     if (ibv_modify_qp(ctx->qp, &attr,
-            IBV_QP_STATE              |
-            IBV_QP_AV                 |
-            IBV_QP_PATH_MTU           |
-            IBV_QP_DEST_QPN           |
-            IBV_QP_RQ_PSN             |
-            IBV_QP_MAX_DEST_RD_ATOMIC |
-            IBV_QP_MIN_RNR_TIMER)) {
+                      IBV_QP_STATE              |
+                      IBV_QP_AV                 |
+                      IBV_QP_PATH_MTU           |
+                      IBV_QP_DEST_QPN           |
+                      IBV_QP_RQ_PSN             |
+                      IBV_QP_MAX_DEST_RD_ATOMIC |
+                      IBV_QP_MIN_RNR_TIMER)) {
         fprintf(stderr, "Failed to modify QP to RTR\n");
         return 1;
     }
@@ -173,12 +173,12 @@ static int pp_connect_ctx(struct pingpong_context *ctx, int port, int my_psn,
     attr.sq_psn	    = my_psn;
     attr.max_rd_atomic  = 1;
     if (ibv_modify_qp(ctx->qp, &attr,
-            IBV_QP_STATE              |
-            IBV_QP_TIMEOUT            |
-            IBV_QP_RETRY_CNT          |
-            IBV_QP_RNR_RETRY          |
-            IBV_QP_SQ_PSN             |
-            IBV_QP_MAX_QP_RD_ATOMIC)) {
+                      IBV_QP_STATE              |
+                      IBV_QP_TIMEOUT            |
+                      IBV_QP_RETRY_CNT          |
+                      IBV_QP_RNR_RETRY          |
+                      IBV_QP_SQ_PSN             |
+                      IBV_QP_MAX_QP_RD_ATOMIC)) {
         fprintf(stderr, "Failed to modify QP to RTS\n");
         return 1;
     }
@@ -220,7 +220,7 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
             close(sockfd);
             sockfd = -1;
         }
-    }ma
+    }
 
     freeaddrinfo(res);
     free(service);
@@ -408,7 +408,7 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
     }
 
     ctx->cq = ibv_create_cq(ctx->context, rx_depth + tx_depth, NULL,
-            ctx->channel, 0);
+                            ctx->channel, 0);
     if (!ctx->cq) {
         fprintf(stderr, "Couldn't create CQ\n");
         return NULL;
@@ -440,14 +440,14 @@ static struct pingpong_context *pp_init_ctx(struct ibv_device *ib_dev, int size,
                 .pkey_index      = 0,
                 .port_num        = port,
                 .qp_access_flags = IBV_ACCESS_REMOTE_READ |
-                IBV_ACCESS_REMOTE_WRITE
+                                   IBV_ACCESS_REMOTE_WRITE
         };
 
         if (ibv_modify_qp(ctx->qp, &attr,
-                IBV_QP_STATE              |
-                IBV_QP_PKEY_INDEX         |
-                IBV_QP_PORT               |
-                IBV_QP_ACCESS_FLAGS)) {
+                          IBV_QP_STATE              |
+                          IBV_QP_PKEY_INDEX         |
+                          IBV_QP_PORT               |
+                          IBV_QP_ACCESS_FLAGS)) {
             fprintf(stderr, "Failed to modify QP to INIT\n");
             return NULL;
         }
@@ -564,27 +564,27 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
             }
 
             switch ((int) wc[i].wr_id) {
-            case PINGPONG_SEND_WRID:
-                ++scnt;
-                break;
+                case PINGPONG_SEND_WRID:
+                    ++scnt;
+                    break;
 
-            case PINGPONG_RECV_WRID:
-                if (--ctx->routs <= 10) {
-                    ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
-                    if (ctx->routs < ctx->rx_depth) {
-                        fprintf(stderr,
-                                "Couldn't post receive (%d)\n",
-                                ctx->routs);
-                        return 1;
+                case PINGPONG_RECV_WRID:
+                    if (--ctx->routs <= 10) {
+                        ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
+                        if (ctx->routs < ctx->rx_depth) {
+                            fprintf(stderr,
+                                    "Couldn't post receive (%d)\n",
+                                    ctx->routs);
+                            return 1;
+                        }
                     }
-                }
-                ++rcnt;
-                break;
+                    ++rcnt;
+                    break;
 
-            default:
-                fprintf(stderr, "Completion for unknown wr_id %d\n",
-                        (int) wc[i].wr_id);
-                return 1;
+                default:
+                    fprintf(stderr, "Completion for unknown wr_id %d\n",
+                            (int) wc[i].wr_id);
+                    return 1;
             }
         }
 
@@ -656,61 +656,61 @@ int main(int argc, char *argv[])
             break;
 
         switch (c) {
-        case 'p':
-            port = strtol(optarg, NULL, 0);
-            if (port < 0 || port > 65535) {
+            case 'p':
+                port = strtol(optarg, NULL, 0);
+                if (port < 0 || port > 65535) {
+                    usage(argv[0]);
+                    return 1;
+                }
+                break;
+
+            case 'd':
+                ib_devname = strdup(optarg);
+                break;
+
+            case 'i':
+                ib_port = strtol(optarg, NULL, 0);
+                if (ib_port < 0) {
+                    usage(argv[0]);
+                    return 1;
+                }
+                break;
+
+            case 's':
+                size = strtol(optarg, NULL, 0);
+                break;
+
+            case 'm':
+                mtu = pp_mtu_to_enum(strtol(optarg, NULL, 0));
+                if (mtu < 0) {
+                    usage(argv[0]);
+                    return 1;
+                }
+                break;
+
+            case 'r':
+                rx_depth = strtol(optarg, NULL, 0);
+                break;
+
+            case 'n':
+                iters = strtol(optarg, NULL, 0);
+                break;
+
+            case 'l':
+                sl = strtol(optarg, NULL, 0);
+                break;
+
+            case 'e':
+                ++use_event;
+                break;
+
+            case 'g':
+                gidx = strtol(optarg, NULL, 0);
+                break;
+
+            default:
                 usage(argv[0]);
                 return 1;
-            }
-            break;
-
-        case 'd':
-            ib_devname = strdup(optarg);
-            break;
-
-        case 'i':
-            ib_port = strtol(optarg, NULL, 0);
-            if (ib_port < 0) {
-                usage(argv[0]);
-                return 1;
-            }
-            break;
-
-        case 's':
-            size = strtol(optarg, NULL, 0);
-            break;
-
-        case 'm':
-            mtu = pp_mtu_to_enum(strtol(optarg, NULL, 0));
-            if (mtu < 0) {
-                usage(argv[0]);
-                return 1;
-            }
-            break;
-
-        case 'r':
-            rx_depth = strtol(optarg, NULL, 0);
-            break;
-
-        case 'n':
-            iters = strtol(optarg, NULL, 0);
-            break;
-
-        case 'l':
-            sl = strtol(optarg, NULL, 0);
-            break;
-
-        case 'e':
-            ++use_event;
-            break;
-
-        case 'g':
-            gidx = strtol(optarg, NULL, 0);
-            break;
-
-        default:
-            usage(argv[0]);
-            return 1;
         }
     }
 
