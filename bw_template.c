@@ -201,7 +201,7 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
     struct pingpong_dest *rem_dest = NULL;
     char gid[33];
 
-    if (asprintf(&service, "%d", port) < 0)
+    if (vsprintf(&service, "%d", port) < 0)
         return NULL;
 
     n = getaddrinfo(servername, service, &hints, &res);
@@ -220,7 +220,7 @@ static struct pingpong_dest *pp_client_exch_dest(const char *servername, int por
             close(sockfd);
             sockfd = -1;
         }
-    }
+    }ma
 
     freeaddrinfo(res);
     free(service);
