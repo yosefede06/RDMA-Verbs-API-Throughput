@@ -519,7 +519,7 @@ static int pp_post_recv(struct pingpong_context *ctx, int n)
     return i;
 }
 
-static int pp_post_send(struct pingpong_context *ctx)
+static int pp_post_send(struct pingpong_context *ctx, int n)
 {
     struct ibv_sge list = {
             .addr	= (uint64_t)ctx->buf,
@@ -535,8 +535,13 @@ static int pp_post_send(struct pingpong_context *ctx)
             .send_flags = IBV_SEND_SIGNALED,
             .next       = NULL
     };
+    int i;
+    for (i = 0; i < n; ++i)
+        if (ibv_post_send(ctx->qp, &wr, &bad_wr))
+            break;
 
-    return ibv_post_send(ctx->qp, &wr, &bad_wr);
+    return i;
+//    return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
 
 int pp_wait_completions(struct pingpong_context *ctx, int iters)
@@ -627,7 +632,7 @@ int main(int argc, char *argv[])
     int                      tx_depth = 100;
     int                      iters = 1000;
     int                      use_event = 0;
-    int                      size = 1;
+    int                      size = 0x100000;
     int                      sl = 0;
     int                      gidx = -1;
     char                     gid[33];
@@ -807,23 +812,70 @@ int main(int argc, char *argv[])
             return 1;
 
     if (servername) {
-        int i;
-        for (i = 0; i < iters; i++) {
-            if ((i != 0) && (i % tx_depth == 0)) {
+        for (int message_size = 1;  message_size < size; message_size*=2) {
+            ctx->size = message_size;
+            int i;
+//            // warm up
+//            for (i = 0; i < tx_depth; i++) {
+//                if (pp_post_send(ctx)) {
+//                    fprintf(stderr, "Client couldn't post send\n");
+//                    return 1;
+//                }
+//            }
+//
+//            pp_wait_completions(ctx, tx_depth);
+//
+//            // end warm up
+            clock_t start_time = clock();
+            for (i = 0; i < iters; i+=tx_depth) {
+//                if ((i != 0) && (i % tx_depth == 0)) {
+//                    pp_wait_completions(ctx, tx_depth);
+//                }
+                pp_post_send(ctx, tx_depth);
                 pp_wait_completions(ctx, tx_depth);
+//                if (pp_post_send(ctx, tx_depth)) {
+//                    fprintf(stderr, "Client couldn't post send\n");
+//                    return 1;
+//                }
             }
-            if (pp_post_send(ctx)) {
-                fprintf(stderr, "Client ouldn't post send\n");
-                return 1;
-            }
+//            ctx->size = 1;
+//            pp_post_recv(ctx, 1);
+            clock_t end_time = clock();
+            double diff_time = (double) (end_time - start_time) / CLOCKS_PER_SEC ;
+            double throughput = iters * message_size / diff_time;
+            printf("%d\t%lf\t%s\n", message_size, throughput, "bytes/secs");
         }
         printf("Client Done.\n");
     } else {
-        if (pp_post_send(ctx)) {
-            fprintf(stderr, "Server couldn't post send\n");
-            return 1;
+        for (int message_size = 1;  message_size < size; message_size*=2) {
+            ctx->size = message_size;
+            int i;
+//            // warm up
+//            for (i = 0; i < rx_depth; i++) {
+//                if (pp_post_recv(ctx, 1)) {
+//                    fprintf(stderr, "Server couldn't post receive\n");
+//                    return 1;
+//                }
+//            }
+//            pp_wait_completions(ctx, rx_depth);
+//            // end warm up
+
+            for (i = 0; i < iters; i+=rx_depth) {
+//                if (pp_post_recv(ctx, 1) != pp_post_recv) {
+//                    printf("%d\n", i);
+//                    fprintf(stderr, "Server couldn't post receive\n");
+////                    return 1;
+//                }
+                    pp_post_recv(ctx, rx_depth);
+//                if ((i != 0) && (i % rx_depth == 0)) {
+                    pp_wait_completions(ctx, rx_depth);
+//                }
+
+            }
+//            ctx->size = 1;
+//            pp_post_send(ctx);
+            pp_wait_completions(ctx, 1);
         }
-        pp_wait_completions(ctx, iters);
         printf("Server Done.\n");
     }
 
