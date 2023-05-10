@@ -840,13 +840,14 @@ int main(int argc, char *argv[])
             }
 //            ctx->size = 1;
 //            pp_post_recv(ctx, 1);
+            ctx->size = 1;
+            pp_post_recv(ctx, 1);
+            pp_wait_completions(ctx, 1);
             clock_t end_time = clock();
             double diff_time = (double) (end_time - start_time) / CLOCKS_PER_SEC * 1000000;
             double throughput = iters * message_size / diff_time;
             printf("%d\t%lf\t%s\n", message_size, throughput, "bytes/microseconds");
-            ctx->size = 1;
-            pp_post_recv(ctx, 1);
-            pp_wait_completions(ctx, 1);
+
         }
         printf("Client Done.\n");
     } else {
