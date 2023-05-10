@@ -860,13 +860,13 @@ int main(int argc, char *argv[])
 //            pp_wait_completions(ctx, rx_depth);
 //            // end warm up
 
-            for (i = 0; i < iters; i+=rx_depth) {
+            while (i < iters) {
 //                if (pp_post_recv(ctx, 1) != pp_post_recv) {
 //                    printf("%d\n", i);
 //                    fprintf(stderr, "Server couldn't post receive\n");
 ////                    return 1;
 //                }
-                    pp_post_recv(ctx, rx_depth);
+                    i += pp_post_recv(ctx, rx_depth);
 //                if ((i != 0) && (i % rx_depth == 0)) {
                     pp_wait_completions(ctx, rx_depth);
 //                }
