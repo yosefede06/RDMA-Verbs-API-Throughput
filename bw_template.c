@@ -812,7 +812,7 @@ int main(int argc, char *argv[])
             return 1;
 
     if (servername) {
-        for (int message_size = 1;  message_size < size; message_size*=2) {
+        for (int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = message_size;
             int i;
 //            // warm up
@@ -847,7 +847,7 @@ int main(int argc, char *argv[])
         }
         printf("Client Done.\n");
     } else {
-        for (int message_size = 1;  message_size < size; message_size*=2) {
+        for (int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = message_size;
             int i;
 //            // warm up
@@ -859,19 +859,14 @@ int main(int argc, char *argv[])
 //            }
 //            pp_wait_completions(ctx, rx_depth);
 //            // end warm up
-            int curr_depth;
-            while (i < iters) {
+
+            for (i = 0; i < iters; i+=rx_depth) {
 //                if (pp_post_recv(ctx, 1) != pp_post_recv) {
 //                    printf("%d\n", i);
 //                    fprintf(stderr, "Server couldn't post receive\n");
 ////                    return 1;
 //                }
-                    curr_depth = 0;
-                    while (curr_depth < rx_depth) {
-                        i += pp_post_recv(ctx, rx_depth - curr_depth);
-                        curr_depth += i;
-                    }
-
+                    pp_post_recv(ctx, rx_depth);
 //                if ((i != 0) && (i % rx_depth == 0)) {
                     pp_wait_completions(ctx, rx_depth);
 //                }
