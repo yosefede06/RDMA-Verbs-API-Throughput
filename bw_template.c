@@ -574,15 +574,15 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
                     break;
 
                 case PINGPONG_RECV_WRID:
-                    if (--ctx->routs <= 10) {
-                        ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
-                        if (ctx->routs < ctx->rx_depth) {
-                            fprintf(stderr,
-                                    "Couldn't post receive (%d)\n",
-                                    ctx->routs);
-                            return 1;
-                        }
-                    }
+//                    if (--ctx->routs <= 10) {
+//                        ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
+//                        if (ctx->routs < ctx->rx_depth) {
+//                            fprintf(stderr,
+//                                    "Couldn't post receive (%d)\n",
+//                                    ctx->routs);
+//                            return 1;
+//                        }
+//                    }
                     ++rcnt;
                     break;
 
