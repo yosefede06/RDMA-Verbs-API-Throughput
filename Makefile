@@ -10,7 +10,8 @@ default: all
 
 all: clean bw_template
 
-bw_template: $(SRC) gcc $(SRC) -libverbs -o server && ln -s server client
+bw_template: $(SRC)
+	gcc $(SRC) -libverbs -o server && ln -s server client
 
 clean:
 	rm -rf ./client ./server
