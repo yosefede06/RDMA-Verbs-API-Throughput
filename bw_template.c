@@ -45,10 +45,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <time.h>
-
+#include <math.h>
 #include <infiniband/verbs.h>
 
-#define WC_BATCH (10)
+#define WC_BATCH (1)
+#define MAXIMUM_SIZE (1048576L)
 
 enum {
     PINGPONG_RECV_WRID = 1,
@@ -559,8 +560,9 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
             }
 
         } while (ne < 1);
-        printf("%d", ne);
         for (i = 0; i < ne; ++i) {
+
+
             if (wc[i].status != IBV_WC_SUCCESS) {
                 fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
                         ibv_wc_status_str(wc[i].status),
@@ -574,6 +576,7 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
                     break;
 
                 case PINGPONG_RECV_WRID:
+//
 //                    if (--ctx->routs <= 10) {
 //                        ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
 //                        if (ctx->routs < ctx->rx_depth) {
@@ -630,9 +633,10 @@ int main(int argc, char *argv[])
     enum ibv_mtu             mtu = IBV_MTU_2048;
     int                      rx_depth = 100;
     int                      tx_depth = 100;
-    int                      iters = 1000;
+    int                      iters = 50000;
     int                      use_event = 0;
-    int                      size = 1048576L;
+    int                      size = MAXIMUM_SIZE;
+    int                      warm_up_iters = 5000;
     int                      sl = 0;
     int                      gidx = -1;
     char                     gid[33];
@@ -815,53 +819,62 @@ int main(int argc, char *argv[])
         for (long int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = message_size;
             long int i;
-//            // warm up
-//            pp_post_send(ctx, tx_depth);
-//            if (pp_wait_completions(ctx, tx_depth)) {
-//                printf("%s", "Error completions");
-//                return 1;
-//            }
-//            // end warm up
+            // warm up
+            for (int j = 0; j < warm_up_iters; j += rx_depth) {
+                pp_post_send(ctx, tx_depth);
+                if (pp_wait_completions(ctx, tx_depth)) {
+                    printf("%s", "Error completions");
+                    return 1;
+                }
+            }
+            // end warm up
             clock_t start_time = clock();
             for (i = 0; i < iters; i+=tx_depth) {
-                pp_post_send(ctx, tx_depth);
+                if (pp_post_send(ctx, tx_depth) != rx_depth) {
+                    printf("%d%s", rx_depth, "Error server send");
+                }
                 if(pp_wait_completions(ctx, tx_depth)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
             }
-//            ctx->size = 1;
-//            pp_post_recv(ctx, 1);
-//            pp_wait_completions(ctx, 1);
+            pp_post_recv(ctx, 1);
+            pp_wait_completions(ctx, 1);
             clock_t end_time = clock();
-            long double diff_time = (long double) (end_time - start_time) / CLOCKS_PER_SEC * 1000000L;
-            long double throughput = iters * message_size / diff_time;
-            printf("%ld\t%Lf\t%s\n", message_size, throughput, "bytes/microseconds");
+            long double diff_time = (long double) (end_time - start_time) / CLOCKS_PER_SEC;
+            long double gb_unit = iters * message_size / pow(1024, 3);
+            long double throughput = gb_unit / diff_time;
+            printf("%ld\t%Lf\t%s\n", message_size, throughput, "Gigabytes/Second");
+
 
         }
         printf("Client Done.\n");
     } else {
         for (int message_size = 1;  message_size <= size; message_size*=2) {
-            ctx->size = message_size;
+            ctx->size = size;
             long int i;
-//            // warm up
-//            pp_post_recv(ctx, rx_depth);
-//            if (pp_wait_completions(ctx, tx_depth)) {
-//                printf("%s", "Error completions");
-//                return 1;
-//            }
-//            // end warm up
+            // warm up
+            for (int j = 0; j < warm_up_iters; j += rx_depth) {
+                pp_post_recv(ctx, rx_depth);
+                if (pp_wait_completions(ctx, tx_depth)) {
+                    printf("%s", "Error completions");
+                    return 1;
+                }
+            }
+            // end warm up
 
             for (i = 0; i < iters; i+=rx_depth) {
-                pp_post_recv(ctx, rx_depth);
+                if (pp_post_recv(ctx, rx_depth) != rx_depth) {
+//                    printf("%d%s", rx_depth, "Error server received");
+                }
                 if (pp_wait_completions(ctx, rx_depth)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
             }
-//            ctx->size = 1;
-//            pp_post_send(ctx, 1);
-//            pp_wait_completions(ctx, 1);
+            ctx->size = 1;
+            pp_post_send(ctx, 1);
+            pp_wait_completions(ctx, 1);
         }
         printf("Server Done.\n");
     }
