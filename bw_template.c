@@ -559,7 +559,7 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
             }
 
         } while (ne < 1);
-
+        printf("%d", ne);
         for (i = 0; i < ne; ++i) {
             if (wc[i].status != IBV_WC_SUCCESS) {
                 fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
@@ -825,7 +825,10 @@ int main(int argc, char *argv[])
             clock_t start_time = clock();
             for (i = 0; i < iters; i+=tx_depth) {
                 pp_post_send(ctx, tx_depth);
-                pp_wait_completions(ctx, tx_depth);
+                if(pp_wait_completions(ctx, tx_depth)) {
+                    printf("%s", "Error completions");
+                    return 1;
+                }
             }
 //            ctx->size = 1;
 //            pp_post_recv(ctx, 1);
