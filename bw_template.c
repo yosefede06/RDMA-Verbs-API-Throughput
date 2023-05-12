@@ -545,7 +545,7 @@ static int pp_post_send(struct pingpong_context *ctx, int n)
 //    return ibv_post_send(ctx->qp, &wr, &bad_wr);
 }
 
-int pp_wait_completions(struct pingpong_context *ctx, int iters)
+int pp_wait_completions(struct pingpong_context *ctx, int iters, long int message_size)
 {
     int rcnt = 0, scnt = 0;
     while (rcnt + scnt < iters) {
@@ -570,21 +570,16 @@ int pp_wait_completions(struct pingpong_context *ctx, int iters)
                 return  1;
             }
 
+
             switch ((int) wc[i].wr_id) {
                 case PINGPONG_SEND_WRID:
                     ++scnt;
                     break;
 
                 case PINGPONG_RECV_WRID:
-//
-//                    if (--ctx->routs <= 10) {
-//                        ctx->routs += pp_post_recv(ctx, ctx->rx_depth - ctx->routs);
-//                        if (ctx->routs < ctx->rx_depth) {
-//                            fprintf(stderr,
-//                                    "Couldn't post receive (%d)\n",
-//                                    ctx->routs);
-//                            return 1;
-//                        }
+//                    if (wc[i].byte_len != message_size) {
+//                        printf("Unexpected size!");
+//                        return 1;
 //                    }
                     ++rcnt;
                     break;
@@ -631,8 +626,8 @@ int main(int argc, char *argv[])
     int                      port = 4792;
     int                      ib_port = 1;
     enum ibv_mtu             mtu = IBV_MTU_2048;
-    int                      rx_depth = 100;
-    int                      tx_depth = 100;
+    int                      rx_depth = 5000;
+    int                      tx_depth = 5000;
     int                      iters = 50000;
     int                      use_event = 0;
     int                      size = MAXIMUM_SIZE;
@@ -822,7 +817,7 @@ int main(int argc, char *argv[])
             // warm up
             for (int j = 0; j < warm_up_iters; j += rx_depth) {
                 pp_post_send(ctx, tx_depth);
-                if (pp_wait_completions(ctx, tx_depth)) {
+                if (pp_wait_completions(ctx, tx_depth, message_size)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
@@ -833,13 +828,13 @@ int main(int argc, char *argv[])
                 if (pp_post_send(ctx, tx_depth) != rx_depth) {
                     printf("%d%s", rx_depth, "Error server send");
                 }
-                if(pp_wait_completions(ctx, tx_depth)) {
+                if(pp_wait_completions(ctx, tx_depth, message_size)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
             }
             pp_post_recv(ctx, 1);
-            pp_wait_completions(ctx, 1);
+            pp_wait_completions(ctx, 1, 1);
             clock_t end_time = clock();
             long double diff_time = (long double) (end_time - start_time) / CLOCKS_PER_SEC;
             long double gb_unit = iters * message_size / pow(1024, 3);
@@ -854,9 +849,9 @@ int main(int argc, char *argv[])
             ctx->size = size;
             long int i;
             // warm up
-            for (int j = 0; j < warm_up_iters; j += rx_depth) {
+            for (int j = 0; j < warm_up_iters; j += rx_depth, message_size) {
                 pp_post_recv(ctx, rx_depth);
-                if (pp_wait_completions(ctx, tx_depth)) {
+                if (pp_wait_completions(ctx, rx_depth, message_size)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
@@ -867,14 +862,14 @@ int main(int argc, char *argv[])
                 if (pp_post_recv(ctx, rx_depth) != rx_depth) {
 //                    printf("%d%s", rx_depth, "Error server received");
                 }
-                if (pp_wait_completions(ctx, rx_depth)) {
+                if (pp_wait_completions(ctx, rx_depth, message_size)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
             }
             ctx->size = 1;
             pp_post_send(ctx, 1);
-            pp_wait_completions(ctx, 1);
+            pp_wait_completions(ctx, 1, 1);
         }
         printf("Server Done.\n");
     }
