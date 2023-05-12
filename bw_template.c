@@ -815,19 +815,19 @@ int main(int argc, char *argv[])
         for (long int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = message_size;
             long int i;
-            // warm up
-            pp_post_send(ctx, tx_depth);
-            if (pp_wait_completions(ctx, tx_depth)) {
-                printf("%s", "Error completions");
-                return 1;
-            }
-            // end warm up
+//            // warm up
+//            pp_post_send(ctx, tx_depth);
+//            if (pp_wait_completions(ctx, tx_depth)) {
+//                printf("%s", "Error completions");
+//                return 1;
+//            }
+//            // end warm up
             clock_t start_time = clock();
             for (i = 0; i < iters; i+=tx_depth) {
                 pp_post_send(ctx, tx_depth);
                 pp_wait_completions(ctx, tx_depth);
             }
-            ctx->size = 1;
+//            ctx->size = 1;
 //            pp_post_recv(ctx, 1);
 //            pp_wait_completions(ctx, 1);
             clock_t end_time = clock();
@@ -841,22 +841,22 @@ int main(int argc, char *argv[])
         for (int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = message_size;
             long int i;
-            // warm up
-            pp_post_recv(ctx, rx_depth);
-            if (pp_wait_completions(ctx, tx_depth)) {
-                printf("%s", "Error completions");
-                return 1;
-            }
-            // end warm up
+//            // warm up
+//            pp_post_recv(ctx, rx_depth);
+//            if (pp_wait_completions(ctx, tx_depth)) {
+//                printf("%s", "Error completions");
+//                return 1;
+//            }
+//            // end warm up
 
             for (i = 0; i < iters; i+=rx_depth) {
-                    pp_post_recv(ctx, rx_depth);
-                if (pp_wait_completions(ctx, tx_depth)) {
+                pp_post_recv(ctx, rx_depth);
+                if (pp_wait_completions(ctx, rx_depth)) {
                     printf("%s", "Error completions");
                     return 1;
                 }
             }
-            ctx->size = 1;
+//            ctx->size = 1;
 //            pp_post_send(ctx, 1);
 //            pp_wait_completions(ctx, 1);
         }
