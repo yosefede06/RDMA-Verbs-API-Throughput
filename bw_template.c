@@ -790,8 +790,8 @@ int main(int argc, char *argv[])
     my_dest.qpn = ctx->qp->qp_num;
     my_dest.psn = lrand48() & 0xffffff;
     inet_ntop(AF_INET6, &my_dest.gid, gid, sizeof gid);
-    printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-           my_dest.lid, my_dest.qpn, my_dest.psn, gid);
+//    printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
+//           my_dest.lid, my_dest.qpn, my_dest.psn, gid);
 
 
     if (servername)
@@ -803,8 +803,8 @@ int main(int argc, char *argv[])
         return 1;
 
     inet_ntop(AF_INET6, &rem_dest->gid, gid, sizeof gid);
-    printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-           rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
+//    printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
+//           rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
 
     if (servername)
         if (pp_connect_ctx(ctx, ib_port, my_dest.psn, mtu, sl, rem_dest, gidx))
@@ -843,7 +843,7 @@ int main(int argc, char *argv[])
 
 
         }
-        printf("Client Done.\n");
+//        printf("Client Done.\n");
     } else {
         for (int message_size = 1;  message_size <= size; message_size*=2) {
             ctx->size = size;
